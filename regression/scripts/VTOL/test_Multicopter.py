@@ -51,7 +51,7 @@ def main():
     
     # RPM of rotor check during hover
     RPM        = results.segments.climb.conditions.propulsion.propeller_rpm[0][0]
-    RPM_true   = 1821.7082493081875
+    RPM_true   = 1558.6468099764097
 
     print(RPM) 
     diff_RPM = np.abs(RPM - RPM_true)
@@ -61,10 +61,8 @@ def main():
     
     # Battery Energy Check During Transition
     battery_energy_transition         = results.segments.hover.conditions.propulsion.battery_energy[:,0]
-    battery_energy_transition_true    = np.array([3.55585731e+08, 3.55104040e+08, 3.53674020e+08, 3.51341657e+08,
-                                                  3.48184651e+08, 3.44313843e+08, 3.39872932e+08, 3.35037815e+08,
-                                                  3.30010491e+08, 3.25010966e+08, 3.20268401e+08, 3.16009151e+08,
-                                                  3.12443962e+08, 3.09754638e+08, 3.08081653e+08, 3.07513853e+08])
+    battery_energy_transition_true    = np.array([3.77531675e+08, 3.74274277e+08, 3.71008468e+08])
+    
     print(battery_energy_transition)
     diff_battery_energy_transition    = np.abs(battery_energy_transition  - battery_energy_transition_true) 
     print('battery energy of transition')
@@ -132,7 +130,7 @@ def configs_setup(vehicle):
     # ------------------------------------------------------------------
     config = SUAVE.Components.Configs.Config(base_config)
     config.tag = 'hover'
-    config.propulsors.vectored_thrust.pitch_command            = 0.  * Units.degrees 
+    config.propulsors.battery_propeller.pitch_command            = 0.  * Units.degrees 
     configs.append(config)
     
     # ------------------------------------------------------------------
@@ -140,7 +138,7 @@ def configs_setup(vehicle):
     # ------------------------------------------------------------------
     config = SUAVE.Components.Configs.Config(base_config)
     config.tag = 'climb'   
-    config.propulsors.vectored_thrust.pitch_command            = 0. * Units.degrees 
+    config.propulsors.battery_propeller.pitch_command            = 0. * Units.degrees 
     configs.append(config)
     
     return configs
@@ -189,18 +187,16 @@ def mission_setup(analyses,vehicle):
       
     # ------------------------------------------------------------------
     #   Initialize the Mission
-    # ------------------------------------------------------------------
-
-    mission = SUAVE.Analyses.Mission.Sequential_Segments()
+    # ------------------------------------------------------------------ 
+    mission     = SUAVE.Analyses.Mission.Sequential_Segments()
     mission.tag = 'mission'
 
     # airport
     airport            = SUAVE.Attributes.Airports.Airport()
     airport.altitude   =  0.0  * Units.ft
     airport.delta_isa  =  0.0
-    airport.atmosphere = SUAVE.Attributes.Atmospheres.Earth.US_Standard_1976()
-
-    mission.airport = airport    
+    airport.atmosphere = SUAVE.Attributes.Atmospheres.Earth.US_Standard_1976() 
+    mission.airport    = airport    
 
     # unpack Segments module
     Segments = SUAVE.Analyses.Mission.Segments
@@ -208,66 +204,40 @@ def mission_setup(analyses,vehicle):
     # base segment
     base_segment                                             = Segments.Segment()
     ones_row                                                 = base_segment.state.ones_row
-    base_segment.process.iterate.initials.initialize_battery = SUAVE.Methods.Missions.Segments.Common.Energy.initialize_battery 
-    base_segment.process.iterate.unknowns.network            = vehicle.propulsors.vectored_thrust.unpack_unknowns
-    base_segment.process.iterate.residuals.network           = vehicle.propulsors.vectored_thrust.residuals
-    base_segment.state.unknowns.propeller_power_coefficient  = 0.05 * ones_row(1) 
-    base_segment.state.unknowns.battery_voltage_under_load   = vehicle.propulsors.vectored_thrust.battery.max_voltage * ones_row(1)     
-    base_segment.state.unknowns.thurst_angle                 = 90. * Units.degrees * ones_row(1)
-    base_segment.state.residuals.network                     = 0. * ones_row(3)    
-    
-    # VSTALL Calculation
-    m      = vehicle.mass_properties.max_takeoff
-    g      = 9.81
-    S      = vehicle.reference_area
-    atmo   = SUAVE.Analyses.Atmospheric.US_Standard_1976()
-    rho    = atmo.compute_values(1000.*Units.feet,0.).density
-    CLmax  = 1.2 
-    Vstall = float(np.sqrt(2.*m*g/(rho*S*CLmax)))
+    base_segment.process.iterate.initials.initialize_battery = SUAVE.Methods.Missions.Segments.Common.Energy.initialize_battery
+    base_segment.state.numerics.number_control_points        = 3
 
     # ------------------------------------------------------------------
     #   First Climb Segment: Constant Speed, Constant Rate
-    # ------------------------------------------------------------------
-
-    segment     = Segments.Hover.Climb(base_segment)
-    segment.tag = "Climb"
-
+    # ------------------------------------------------------------------ 
+    segment                                               = Segments.Hover.Climb(base_segment)
+    segment.tag                                           = "Climb" 
     segment.analyses.extend( analyses.climb) 
-    segment.altitude_start  = 0.0  * Units.ft
-    segment.altitude_end    = 40.  * Units.ft
-    segment.climb_rate      = 300. * Units['ft/min']
-    segment.battery_energy  = vehicle.propulsors.vectored_thrust.battery.max_energy*0.95
-    
-    segment.state.unknowns.throttle                       = 1.0 * ones_row(1)
-    segment.state.unknowns.propeller_power_coefficient    = 0.2 * ones_row(1) 
-
-    segment.process.iterate.unknowns.network          = vehicle.propulsors.vectored_thrust.unpack_unknowns
-    segment.process.iterate.residuals.network         = vehicle.propulsors.vectored_thrust.residuals
-    segment.process.iterate.unknowns.mission          = SUAVE.Methods.skip
-    segment.process.iterate.conditions.stability      = SUAVE.Methods.skip
-    segment.process.finalize.post_process.stability   = SUAVE.Methods.skip 
+    segment.altitude_start                                = 0.0  * Units.ft
+    segment.altitude_end                                  = 40.  * Units.ft
+    segment.climb_rate                                    = 300. * Units['ft/min']
+    segment.battery_energy                                = vehicle.propulsors.battery_propeller.battery.max_energy  
+    segment.state.unknowns.throttle                       = 0.9 * ones_row(1) 
+    segment.process.iterate.conditions.stability          = SUAVE.Methods.skip
+    segment.process.finalize.post_process.stability       = SUAVE.Methods.skip 
+    segment = vehicle.propulsors.battery_propeller.add_unknowns_and_residuals_to_segment(segment,\
+                                                                                         initial_power_coefficient = 0.01)
     
     # add to misison
     mission.append_segment(segment)
 
     # ------------------------------------------------------------------
     #   Hover Segment: Constant Speed, Constant Rate
-    # ------------------------------------------------------------------
-
-    segment    = Segments.Hover.Hover(base_segment)
-    segment.tag = "Hover" 
-    segment.analyses.extend( analyses.hover )
- 
-    segment.altitude    = 40.  * Units.ft
-    segment.time        = 2*60
-    segment.state.unknowns.propeller_power_coefficient      = 0.04 * ones_row(1)     
-    segment.state.unknowns.throttle                         = 0.7 * ones_row(1)
+    # ------------------------------------------------------------------ 
+    segment                                                 = Segments.Hover.Hover(base_segment)
+    segment.tag                                             = "Hover" 
+    segment.analyses.extend( analyses.hover ) 
+    segment.altitude                                        = 40.  * Units.ft
+    segment.time                                            = 2*60
+    segment.process.iterate.conditions.stability            = SUAVE.Methods.skip
+    segment.process.finalize.post_process.stability         = SUAVE.Methods.skip 
+    segment = vehicle.propulsors.battery_propeller.add_unknowns_and_residuals_to_segment(segment)
     
-    segment.process.iterate.unknowns.network          = vehicle.propulsors.vectored_thrust.unpack_unknowns 
-    segment.process.iterate.residuals.network         = vehicle.propulsors.vectored_thrust.residuals   
-    segment.process.iterate.unknowns.mission          = SUAVE.Methods.skip
-    segment.process.iterate.conditions.stability      = SUAVE.Methods.skip
-    segment.process.finalize.post_process.stability   = SUAVE.Methods.skip 
     
     # add to misison
     mission.append_segment(segment)  
