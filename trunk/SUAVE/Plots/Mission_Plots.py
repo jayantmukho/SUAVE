@@ -46,26 +46,26 @@ def plot_altitude_sfc_weight(results, line_color = 'bo-', save_figure = False, s
     fig.set_size_inches(10, 8) 
     for segment in results.segments.values(): 
         time     = segment.conditions.frames.inertial.time[:,0] / Units.min 
-        mass     = segment.conditions.weights.total_mass[:,0] / Units.lb
-        altitude = segment.conditions.freestream.altitude[:,0] / Units.ft
+        mass     = segment.conditions.weights.total_mass[:,0] 
+        altitude = segment.conditions.freestream.altitude[:,0] 
         mdot     = segment.conditions.weights.vehicle_mass_rate[:,0]
         thrust   =  segment.conditions.frames.body.thrust_force_vector[:,0]
-        sfc      = (mdot / Units.lb) / (thrust /Units.lbf) * Units.hr
+        sfc      = (mdot) / (thrust) * Units.hr
 
         axes = plt.subplot(3,1,1)
         axes.plot( time , altitude , line_color)
-        axes.set_ylabel('Altitude (ft)',axis_font)
+        axes.set_ylabel('Altitude (m)',axis_font)
         set_axes(axes)
 
         axes = plt.subplot(3,1,3)
         axes.plot( time , sfc , line_color )
         axes.set_xlabel('Time (min)',axis_font)
-        axes.set_ylabel('sfc (lb/lbf-hr)',axis_font)
+        axes.set_ylabel('sfc (kg/N-hr)',axis_font)
         set_axes(axes)
 
         axes = plt.subplot(3,1,2)
         axes.plot( time , mass , 'ro-' )
-        axes.set_ylabel('Weight (lb)',axis_font)
+        axes.set_ylabel('Weight (kg)',axis_font)
         set_axes(axes)
         
     if save_figure:

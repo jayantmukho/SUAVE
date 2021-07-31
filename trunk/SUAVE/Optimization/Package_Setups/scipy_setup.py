@@ -138,11 +138,11 @@ def SciPy_Problem(problem,x):
         None
     """      
     
-    print('Inputs')
-    print(x)        
+    # print('Inputs')
+    # print(x)        
     obj   = problem.objective(x)
-    print('Obj')
-    print(obj)
+    # print('Obj')
+    # print(obj)
 
     
     return obj

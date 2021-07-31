@@ -93,6 +93,10 @@ def payload_range(vehicle,mission,cruise_segment_tag,reserves=0.):
         MaxFuel = vehicle.mass_properties.max_fuel  # If max fuel capacity not defined
         MaxFuel = min(MaxFuel, MTOW - OEW)
 
+    print('OEW= ' + str(OEW))
+    print('MaxFuel= ' + str(MaxFuel))
+    print('MaxPLD= ' + str(MaxPLD))
+
 
     # Define payload range points
     #Point  = [ RANGE WITH MAX. PLD   , RANGE WITH MAX. FUEL , FERRY RANGE   ]
@@ -145,6 +149,8 @@ def payload_range(vehicle,mission,cruise_segment_tag,reserves=0.):
             CruiseFuel = segment.conditions.weights.total_mass[0,0] - segment.conditions.weights.total_mass[-1,0]    # [kg]
             # Current specific range (m/kg)
             CruiseSR    = CruiseDist / CruiseFuel        # [m/kg]
+            CruiseBurnRate = np.mean(results.segments[cruise_segment_tag].conditions.weights.vehicle_mass_rate[:,0])
+            # reserves    = 0.0*TotalFuel + 161124/CruiseSR + CruiseBurnRate * 45 * 60
 
             # Estimated distance that will result in total fuel burn = target fuel
             DeltaDist  =  CruiseSR *  missingFuel
@@ -160,10 +166,15 @@ def payload_range(vehicle,mission,cruise_segment_tag,reserves=0.):
             if iprint:
                 print(('     iter: ' +str('%2g' % iter) + ' | Target Fuel: '   \
                   + str('%8.0F' % FUEL[i]) + ' (kg) | Current Fuel: ' \
-                  + str('%8.0F' % (err+FUEL[i]))+' (kg) | Residual : '+str('%8.0F' % err)))
+                  + str('%8.0F' % (err+FUEL[i]))+' (kg) | Residual : '+str('%8.0F' % err) + '| Reserve : '+str('%8.0F' % reserves)))
 
         # Allocating resulting range in ouput array.
         R[i] = ( results.segments[-1].conditions.frames.inertial.position_vector[-1,0] ) * Units.m / Units.nautical_mile      #Distance [nm]
+        CruiseDist = np.diff( segment.conditions.frames.inertial.position_vector[[0,-1],0] )[0]        # Distance [m]
+        CruiseFuel = segment.conditions.weights.total_mass[0,0] - segment.conditions.weights.total_mass[-1,0]    # [kg]
+        # Current specific range (m/kg)
+        CruiseFC    = CruiseFuel/CruiseDist        # [kg/m]
+        print('Cruise Fuel Consumption: ' + str('%0.8F' % CruiseFC))
 
     # Inserting point (0,0) in output arrays
     R.insert(0,0)

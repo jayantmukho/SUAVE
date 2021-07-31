@@ -45,7 +45,7 @@ def initialize_conditions(segment):
     
     # unpack
     descent_rate = segment.descent_rate
-    cas          = segment.calibrated_air_speed   
+    cas          = segment.calibrated_airspeed   
     alt0         = segment.altitude_start 
     altf         = segment.altitude_end
     t_nondim     = segment.state.numerics.dimensionless.control_points

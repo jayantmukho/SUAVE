@@ -334,8 +334,8 @@ def empty_weight(vehicle, settings=None, method_type='New SUAVE'):
         output.structures.nacelle = 0
     else:
         output.structures.nacelle = wt_prop_data.nacelle
-    if 'FLOPS' in method_type:
-        print('Paint weight is currently ignored in FLOPS calculations.')
+    # if 'FLOPS' in method_type:
+        # print('Paint weight is currently ignored in FLOPS calculations.')
     output.structures.paint = 0  # TODO reconcile FLOPS paint calculations with Raymer and SUAVE baseline
     output.structures.total = output.structures.wing + output.structures.horizontal_tail + output.structures.vertical_tail \
                               + output.structures.fuselage + output.structures.main_landing_gear + output.structures.nose_landing_gear \
