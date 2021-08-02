@@ -200,11 +200,11 @@ def PyOpt_Problem(problem,xdict):
         funcs[problem.optimization_problem.constraints[ii,0]] = con
 
        
-    print('Inputs')
-    print(x)
-    print('Obj')
-    print(obj)
-    print('Con')
-    print(const)
+    # print('Inputs')
+    # print(x)
+    # print('Obj')
+    # print(obj)
+    # print('Con')
+    # print(const)
    
     return funcs,fail
