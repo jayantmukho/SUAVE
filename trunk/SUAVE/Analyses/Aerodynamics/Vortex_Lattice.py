@@ -78,6 +78,7 @@ class Vortex_Lattice(Aerodynamics):
         self.settings.spanwise_cosine_spacing         = True
         self.settings.vortex_distribution             = Data()   
         self.settings.model_fuselage                  = False
+        self.settings.model_nacelle                   = False
         self.settings.leading_edge_suction_multiplier = 1.0
         self.settings.initial_timestep_offset         = 0
         self.settings.wake_development_time           = 0.05
@@ -128,7 +129,7 @@ class Vortex_Lattice(Aerodynamics):
         
         self.evaluate                                = None
         
-    def initialize(self,use_surrogate,n_sw,n_cw,propeller_wake_model, use_bemt_wake_model,ito,wdt,nwts,mf):
+    def initialize(self,use_surrogate,n_sw,n_cw,propeller_wake_model, use_bemt_wake_model,ito,wdt,nwts,mf,mn,dcs):
         """Drives functions to get training samples and build a surrogate.
 
         Assumptions:
@@ -167,7 +168,9 @@ class Vortex_Lattice(Aerodynamics):
         settings.initial_timestep_offset    = ito
         settings.wake_development_time      = wdt
         settings.number_of_wake_timesteps   = nwts
+        settings.discretize_control_surfaces= dcs
         settings.model_fuselage             = mf
+        settings.model_nacelle              = mn
         
         # If we are using the surrogate
         if use_surrogate == True: 
@@ -349,7 +352,7 @@ class Vortex_Lattice(Aerodynamics):
         # Evaluate the VLM
         # if in transonic regime, use surrogate
         inviscid_lift, inviscid_drag, wing_lifts, wing_drags, wing_lift_distribution, \
-        wing_drag_distribution, induced_angle_distribution, pressure_coefficient = \
+        wing_drag_distribution, induced_angle_distribution, pressure_coefficient, CYMTOT,CRMTOT,CM = \
             calculate_VLM(conditions,settings,geometry)
         
         # Lift 
@@ -367,8 +370,13 @@ class Vortex_Lattice(Aerodynamics):
         conditions.aerodynamics.drag_breakdown.induced.wings_sectional = wing_drag_distribution 
         conditions.aerodynamics.drag_breakdown.induced.angle           = induced_angle_distribution
         
-        # Pressure
-        conditions.aerodynamics.pressure_coefficient                   = pressure_coefficient
+        # Pressure and moment coefficients
+        conditions.aerodynamics.pressure_coefficient = pressure_coefficient
+        conditions.aerodynamics.moment_coefficient   = CM
+        
+        # Stability
+        conditions.stability.static.yawing_moment_coefficient = CYMTOT
+        conditions.stability.static.rolling_moment_coefficient = CRMTOT
         
         return  
     
@@ -430,7 +438,7 @@ class Vortex_Lattice(Aerodynamics):
         konditions.freestream.mach_number       = Machs
         konditions.freestream.velocity          = zeros
         
-        total_lift, total_drag, wing_lifts, wing_drags, _, _, _, _ = calculate_VLM(konditions,settings,geometry)     
+        total_lift, total_drag, wing_lifts, wing_drags, _, _, _, _, _, _, _ = calculate_VLM(konditions,settings,geometry)     
     
         # Split subsonic from supersonic
         if np.sum(Machs<1.)==0:
@@ -671,7 +679,10 @@ def calculate_VLM(conditions,settings,geometry):
     cl_y                      = results.cl_y     
     cdi_y                     = results.cdi_y    
     alpha_i                   = results.alpha_i  
-    CPi                       = results.CP      
+    CPi                       = results.CP  
+    CYMTOT                    = results.CYMTOT
+    CRMTOT                    = results.CRMTOT
+    CM                        = results.CM
     
     # Dimensionalize the lift and drag for each wing
     areas = geometry.vortex_distribution.wing_areas
@@ -693,4 +704,4 @@ def calculate_VLM(conditions,settings,geometry):
             wing_induced_angle[wing.tag] = alpha_i[i]
         i+=1
 
-    return total_lift_coeff, total_induced_drag_coeff, wing_lifts, wing_drags, cl_y, cdi_y, wing_induced_angle, CPi
+    return total_lift_coeff, total_induced_drag_coeff, wing_lifts, wing_drags, cl_y, cdi_y, wing_induced_angle, CPi,CYMTOT,CRMTOT, CM

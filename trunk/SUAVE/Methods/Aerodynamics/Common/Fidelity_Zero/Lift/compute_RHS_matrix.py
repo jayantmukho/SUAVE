@@ -89,45 +89,57 @@ def compute_RHS_matrix(delta,phi,conditions,settings,geometry,propeller_wake_mod
 
     for network in geometry.networks:
         if propeller_wake_model:
-            if 'propellers' in network.keys():
+            if 'propellers' in network.keys(): 
+                if network.number_of_propeller_engines == None:
+                    pass
+                else:          
+                    # extract the propeller data structure
+                    identical_props = network.identical_propellers
+                    props           = network.propellers
+    
+                    # generate the geometry of the propeller helical wake
+                    wake_distribution, dt,time_steps,num_blades, num_radial_stations = generate_propeller_wake_distribution(props,identical_props,num_ctrl_pts,\
+                                                                                                                            VD,initial_timestep_offset,wake_development_time,\
+                                                                                                                            number_of_wake_timesteps,conditions)
+                    # compute the induced velocity
+                    prop_V_wake_ind = compute_wake_induced_velocity(wake_distribution,VD,num_ctrl_pts)
 
-                # extract the propeller data structure
-                identical_props = network.identical_propellers
-                props           = network.propellers
-
-                # generate the geometry of the propeller helical wake
-                wake_distribution, dt,time_steps,num_blades, num_radial_stations = generate_propeller_wake_distribution(props,identical_props,num_ctrl_pts,\
-                                                                                                                        VD,initial_timestep_offset,wake_development_time,\
-                                                                                                                        number_of_wake_timesteps,conditions)
-                # compute the induced velocity
-                prop_V_wake_ind = compute_wake_induced_velocity(wake_distribution,VD,num_ctrl_pts)
-
-            if 'lift_rotors' in network.keys():
-
-                # extract the propeller data structure
-                identical_rots = network.identical_lift_rotors
-                lift_rotors    = network.rotors
-
-                # generate the geometry of the propeller helical wake
-                wake_distribution, dt,time_steps,num_blades, num_radial_stations = generate_propeller_wake_distribution(lift_rotors,identical_rots,num_ctrl_pts,\
-                                                                                                                        VD,initial_timestep_offset,wake_development_time,\
-                                                                                                                        number_of_wake_timesteps,conditions)
-                # compute the induced velocity
-                rot_V_wake_ind = compute_wake_induced_velocity(wake_distribution,VD,num_ctrl_pts)
+            if 'lift_rotors' in network.keys(): 
+                if network.number_of_lift_rotor_engines == None:
+                    pass
+                else:  
+                    # extract the propeller data structure
+                    identical_rots = network.identical_lift_rotors
+                    lift_rotors    = network.rotors
+    
+                    # generate the geometry of the propeller helical wake
+                    wake_distribution, dt,time_steps,num_blades, num_radial_stations = generate_propeller_wake_distribution(lift_rotors,identical_rots,num_ctrl_pts,\
+                                                                                                                            VD,initial_timestep_offset,wake_development_time,\
+                                                                                                                            number_of_wake_timesteps,conditions)
+                    # compute the induced velocity
+                    rot_V_wake_ind = compute_wake_induced_velocity(wake_distribution,VD,num_ctrl_pts)
 
         elif bemt_wake:
             # adapt the RHS matrix with the BEMT induced velocities
-            if 'propellers' in network.keys():
-                if not network.identical_propellers:
-                    assert('This method currently only works with identical propellers')
-                props = network.propellers
-                prop_V_wake_ind = compute_bemt_induced_velocity(props,geometry,num_ctrl_pts,conditions)
+            if 'propellers' in network.keys():  
+                identical_flag = network.identical_propellers
+                if network.number_of_propeller_engines == None:
+                    pass
+                else:                          
+                    if not network.identical_propellers:
+                        assert('This method currently only works with identical propellers')
+                    props = network.propellers
+                    prop_V_wake_ind = compute_bemt_induced_velocity(props,geometry,num_ctrl_pts,conditions,identical_flag)
 
-            if 'lift_rotors' in network.keys():
-                if not network.identical_lift_rotors:
-                    assert('This method currently only works with identical rotors')
-                rotors = network.rotors
-                rot_V_wake_ind = compute_bemt_induced_velocity(rotors,geometry,num_ctrl_pts,conditions)
+            if 'lift_rotors' in network.keys(): 
+                identical_flag = network.identical_lift_rotors
+                if network.number_of_lift_rotor_engines == None:
+                    pass
+                else:                  
+                    if not network.identical_lift_rotors:
+                        assert('This method currently only works with identical rotors')
+                    rotors = network.rotors
+                    rot_V_wake_ind = compute_bemt_induced_velocity(rotors,geometry,num_ctrl_pts,conditions,identical_flag)
 
         if propeller_wake_model or bemt_wake:
             # update the total induced velocity distribution
@@ -227,13 +239,10 @@ def build_RHS(VD, conditions, settings, aoa_distribution, delta, phi, PSI_distri
     VX = (COSCOS - PITCH*ZGIRO + YAW  *YGIRO)
     VY = (COSIN  - YAW  *XGIRO + ROLL *ZGIRO)
     VZ = (SINALF - ROLL *YGIRO + PITCH*XGIRO)
-
-    # CCNTL AND SCNTL ARE DIRECTION COSINE PARAMETERS OF TANGENT TO
-    # CAMBERLINE AT LEADING EDGE.
-    # SLE is slope at leading edge only
-    SLE    = np.repeat(VD.SLE, RNMAX[LE_ind])
-    CCNTL  = 1. / np.sqrt(1.0 + SLE**2)
-    SCNTL  = SLE *CCNTL
+    
+    #COMPUTE DIRECTION COSINES.
+    SCNTL  = VD.SLOPE/np.sqrt(1. + VD.SLOPE **2)
+    CCNTL  = 1. / np.sqrt(1.0 + SCNTL**2)
     phi_LE = np.repeat(phi[:,LE_ind]  , RNMAX[LE_ind], axis=1)
     COD    = np.cos(phi_LE)
     SID    = np.sin(phi_LE)
@@ -254,17 +263,16 @@ def build_RHS(VD, conditions, settings, aoa_distribution, delta, phi, PSI_distri
 
     Vx                = V_distribution*np.cos(aoa_distribution)*np.cos(PSI_distribution) + Vx_rotation - Vx_ind_total
     Vy                = V_distribution*np.cos(aoa_distribution)*np.sin(PSI_distribution) + Vy_rotation + Vy_ind_total
-    Vz                = V_distribution*np.sin(aoa_distribution)                          + Vz_rotation - Vz_ind_total
+    Vz                = V_distribution*np.sin(aoa_distribution)                          + Vz_rotation - Vz_ind_total    
     V_distribution    = np.sqrt(Vx**2 + Vy**2 + Vz**2 )
 
     aoa_distribution  = np.arctan(Vz/ np.sqrt(Vx**2 + Vy**2) )
     PSI_distribution  = np.arctan(Vy / Vx)
 
     # compute RHS: dot(v, panel_normals)
-    # note there is a subtle difference bewtween the normals used here and VD.normals
-    panel_normals    = np.array([np.sin(delta), np.cos(delta)*np.sin(phi), -np.cos(delta)*np.cos(phi)]).T
     V_unit_vector    = (np.array([Vx,Vy,Vz])/V_distribution).T
-    RHS_from_normals = np.sum(-V_unit_vector*panel_normals, axis=2).T
+    panel_normals    = VD.normals[:,np.newaxis,:]
+    RHS_from_normals = np.sum(V_unit_vector*panel_normals, axis=2).T    
 
     #pack values--------------------------------------------------------------------------
     use_VORLAX_RHS = settings.use_VORLAX_matrix_calculation
