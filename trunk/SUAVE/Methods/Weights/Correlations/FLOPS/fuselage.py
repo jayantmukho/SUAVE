@@ -68,4 +68,4 @@ def fuselage_weight_FLOPS(vehicle):
             CARGF = 0  # Cargo aircraft floor factor [0 for passenger transport, 1 for cargo transport
         NFUSE = 1  # Number of fuselages
         WFUSE = 1.35 * (XL * DAV) ** 1.28 * (1 + 0.05 * FNEF) * (1 + 0.38 * CARGF) * NFUSE
-    return WFUSE * Units.lbs
+    return float(WFUSE) * Units.lbs

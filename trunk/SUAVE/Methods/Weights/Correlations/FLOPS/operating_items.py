@@ -58,7 +58,7 @@ def operating_items_FLOPS(vehicle):
     NENG            = networks.number_of_engines
     THRUST          = networks.sealevel_static_thrust * 1 / Units.lbf
     SW              = vehicle.reference_area / Units.ft ** 2
-    FMXTOT          = vehicle.mass_properties.max_zero_fuel / Units.lbs
+    FMXTOT          = vehicle.mass_properties.max_fuel / Units.lbs
     DESRNG          = vehicle.design_range / Units.nmi
     VMAX            = vehicle.design_mach_number   
     
@@ -89,6 +89,9 @@ def operating_items_FLOPS(vehicle):
     if vehicle.passengers >= 150:
         NFLCR = 3  # number of flight crew
         NGALC = 1 + np.floor(vehicle.passengers / 250.)  # number of galley crew
+    elif vehicle.passengers < 20:
+        NFLCR = 1
+        NGALC = 0
     else:
         NFLCR = 2
         NGALC = 0

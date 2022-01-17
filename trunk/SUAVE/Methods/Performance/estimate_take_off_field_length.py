@@ -122,6 +122,29 @@ def estimate_take_off_field_length(vehicle,analyses,airport,compute_2nd_seg_clim
     # Getting engine thrust
     # ==============================================    
     state = SUAVE.Analyses.Mission.Segments.Conditions.State()
+    for net in vehicle.networks:
+        if isinstance(net,SUAVE.Components.Energy.Networks.Battery_Propeller):
+            # unpack Segments module
+            Segments = SUAVE.Analyses.Mission.Segments
+
+            # base segment
+            base_segment = Segments.Segment()
+            ones_row     = base_segment.state.ones_row
+            base_segment.state.numerics.number_control_points        = 7
+
+            base_segment.process.iterate.unknowns.network            = vehicle.networks.battery_propeller.unpack_unknowns    
+            base_segment.process.iterate.initials.initialize_battery = SUAVE.Methods.Missions.Segments.Common.Energy.initialize_battery
+            base_segment.process.iterate.conditions.planet_position  = SUAVE.Methods.skip
+            base_segment.process.iterate.conditions.stability        = SUAVE.Methods.skip
+            base_segment.process.finalize.post_process.stability     = SUAVE.Methods.skip    
+
+            base_segment.process.iterate.residuals.network           = vehicle.networks.battery_propeller.residuals
+            base_segment.state.unknowns.propeller_power_coefficient  = 0.16 * ones_row(1) 
+            base_segment.state.unknowns.battery_voltage_under_load   = vehicle.networks.battery_propeller.battery.max_voltage * ones_row(1)  
+            base_segment.state.residuals.network                     = 0. * ones_row(2)
+            takeoff_segment = Segments.Ground.Takeoff(base_segment)
+            takeoff_segment = net.add_unknowns_and_residuals_to_segment(takeoff_segment)
+            state = takeoff_segment.state
     conditions = state.conditions
     conditions.update( SUAVE.Analyses.Mission.Segments.Conditions.Aerodynamics() )
 

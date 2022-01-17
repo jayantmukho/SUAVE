@@ -47,8 +47,8 @@ class Liquid_H2(Propellant):
         
         self.tag                        = 'Liquid_H2' 
         self.reactant                   = 'O2' 
-        self.density                    = 59.9                             # [kg/m^3] 
-        self.specific_energy            = 141.86e6                         # [J/kg] 
-        self.energy_density             = 8491.0e6                         # [J/m^3] 
+        self.density                    = 70.88                            # [kg/m^3] 
+        self.specific_energy            = 120.0e6                         # [J/kg] 
+        self.energy_density             = self.density * self.specific_energy # [J/m^3] 
         self.stoichiometric_fuel_to_air = 0.0291 
         self.temperatures.autoignition  = 845.15                           # [K]         

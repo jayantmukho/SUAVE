@@ -118,6 +118,7 @@ def compute_component_centers_of_gravity(vehicle, nose_load = 0.06):
         for fuse in vehicle.fuselages:
             nose   = fuse.lengths.nose
             length = fuse.lengths.total
+            middle_of_cabin = fuse.lengths.nose + fuse.lengths.fore_space + fuse.lengths.cabin/2
             if length > length_scale:
                 length_scale = length
                 nose_length  = nose
@@ -141,14 +142,14 @@ def compute_component_centers_of_gravity(vehicle, nose_load = 0.06):
     avionics.origin[0][0]                                      = 0.4 * nose_length
     avionics.mass_properties.center_of_gravity[0][0]           = 0.0
     
-    furnishings.origin[0][0]                                   = 0.51 * length_scale
+    furnishings.origin[0][0]                                   = middle_of_cabin
     furnishings.mass_properties.center_of_gravity[0][0]        = 0.0
     
     #assumption that it's at 90% of fuselage length (not from notes)
     apu.origin[0][0]                                           = 0.9 * length_scale   
     apu.mass_properties.center_of_gravity[0][0]                = 0.0
     
-    passengers.origin[0][0]                                    = 0.51 * length_scale  
+    passengers.origin[0][0]                                    = middle_of_cabin  
     passengers.mass_properties.center_of_gravity[0][0]         = 0.0
     
     baggage.origin[0][0]                                       = 0.51 * length_scale  

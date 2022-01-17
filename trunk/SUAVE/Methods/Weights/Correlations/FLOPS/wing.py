@@ -221,7 +221,7 @@ def wing_weight_FLOPS(vehicle, wing, WPOD, complexity, settings, num_main_wings)
     PCTL    = 1/num_main_wings  # Fraction of load carried by this wing
     W1NIR   = A[0] * BT * (1 + np.sqrt(A[1] / SPAN)) * ULF * SPAN * (1 - 0.4 * FCOMP) * (
                 1 - 0.1 * FAERT) * CAYF * VFACT * PCTL / 10.0 ** 6  # Wing bending material weight lb
-    SFLAP   = wing.flap_ratio * SX
+    SFLAP   = wing.control_surfaces.flap.chord_fraction * SX
 
     W2 = A[2] * (1 - 0.17 * FCOMP) * SFLAP ** (A[3]) * DG ** (A[4])  # shear material weight
     W3 = A[5] * (1 - 0.3 * FCOMP) * SW ** (A[6])  # miscellaneous items weight

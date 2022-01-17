@@ -175,7 +175,7 @@ def fuel_system_FLOPS(vehicle, NENG):
         Inputs:
             vehicle - data dictionary with vehicle properties                   [dimensionless]
                 -.design_mach_number: design mach number
-                -.mass_properties.max_zero_fuel: maximum zero fuel weight   [kg]
+                -.mass_properties.max_fuel: maximum zero fuel weight   [kg]
 
         Outputs:
             WFSYS: Fuel system weight                                       [kg]
@@ -184,7 +184,7 @@ def fuel_system_FLOPS(vehicle, NENG):
             N/A
     """
     VMAX = vehicle.design_mach_number
-    FMXTOT = vehicle.mass_properties.max_zero_fuel / Units.lbs
+    FMXTOT = vehicle.mass_properties.max_fuel / Units.lbs
     WFSYS = 1.07 * FMXTOT ** 0.58 * NENG ** 0.43 * VMAX ** 0.34
     return WFSYS * Units.lbs
 
@@ -218,16 +218,20 @@ def engine_FLOPS(vehicle, prop):
     EEXP = 1.15
     EINL = 1
     ENOZ = 1
-    THRSO = prop.sealevel_static_thrust * 1 / Units.lbf
-    THRUST = THRSO
-    if vehicle.systems.accessories == "short-range" or vehicle.systems.accessories == "commuter":
-        WENGB = THRSO / 10.5
+    THRUST = prop.sealevel_static_thrust / prop.number_of_engines * 1 / Units.lbf
+    if "baseline" in prop.keys():
+        THRSO = prop.baseline.sealevel_static_thrust / prop.number_of_engines * 1 / Units.lbf
+        WENGB = prop.baseline.mass / prop.number_of_engines * 1 / Units.lb
     else:
-        WENGB = THRSO / 5.5
+        THRSO = THRUST
+        if vehicle.systems.accessories == "short-range" or vehicle.systems.accessories == "commuter":
+            WENGB = THRSO / 10.5
+        else:
+            WENGB = THRSO / 5.5
     WINLB = 0 / Units.lbs
     WNOZB = 0 / Units.lbs
     WENGP = WENGB * (THRUST / THRSO) ** EEXP
     WINL = WINLB * (THRUST / THRSO) ** EINL
     WNOZ = WNOZB * (THRUST / THRSO) ** ENOZ
     WENG = WENGP + WINL + WNOZ
-    return WENG * Units.lbs
+    return WENG * Units.lb

@@ -69,7 +69,7 @@ def systems_FLOPS(vehicle):
     networks        = vehicle.networks[network_name]
     NENG            = networks.number_of_engines
     VMAX            = vehicle.design_mach_number
-    SFLAP           = vehicle.wings['main_wing'].areas.reference * vehicle.wings['main_wing'].flap_ratio / Units.ft ** 2
+    SFLAP           = vehicle.wings['main_wing'].areas.reference * vehicle.wings['main_wing'].control_surfaces.flap.chord_fraction / Units.ft ** 2
     DG              = vehicle.mass_properties.max_takeoff / Units.lbs
     WSC             = 1.1 * VMAX ** 0.52 * SFLAP ** 0.6 * DG ** 0.32  # surface controls weight
 
@@ -122,5 +122,5 @@ def systems_FLOPS(vehicle):
     output.wt_ac                = WAC * Units.lbs
     output.wt_furnish           = WFURN * Units.lbs
     output.wt_anti_ice          = WAI * Units.lbs
-    output.wt_systems           = WSC + WAPU + WIN + WHYD + WELEC + WAVONC + WFURN + WAC + WAI
+    output.wt_systems           = (WSC + WAPU + WIN + WHYD + WELEC + WAVONC + WFURN + WAC + WAI) * Units.lbs
     return output

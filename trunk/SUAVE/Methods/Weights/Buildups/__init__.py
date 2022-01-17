@@ -3,5 +3,6 @@
 # sizing.
 # @ingroup Methods-Weights
 
-from . import eVTOL  
-from . import Common  
+from . import eVTOL
+from . import eTransport 
+from . import Common
