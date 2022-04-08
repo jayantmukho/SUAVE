@@ -197,9 +197,12 @@ def fuel_system_FLOPS(vehicle, NENG):
         Properties Used:
             N/A
     """
+    ac_system = vehicle.systems.accessories
     VMAX = vehicle.design_mach_number
     FMXTOT = vehicle.mass_properties.max_fuel / Units.lbs
     WFSYS = 1.07 * FMXTOT ** 0.58 * NENG ** 0.43 * VMAX ** 0.34
+    if ac_system == 'commuter' or ac_system == 'business':
+        WFSYS = 1.07 * FMXTOT ** 0.58 * NENG ** 0.43
     return WFSYS * Units.lbs
 
 ## @ingroup Methods-Weights-Correlations-FLOPS

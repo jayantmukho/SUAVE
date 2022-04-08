@@ -9,6 +9,7 @@
 # ----------------------------------------------------------------------
 from SUAVE.Core import Units, Data
 import numpy as np
+import SUAVE
 
 ## @ingroup Methods-Weights-Correlations-FLOPS
 def systems_FLOPS(vehicle):
@@ -72,6 +73,18 @@ def systems_FLOPS(vehicle):
     SFLAP           = vehicle.wings['main_wing'].areas.reference * vehicle.wings['main_wing'].control_surfaces.flap.chord_fraction / Units.ft ** 2
     DG              = vehicle.mass_properties.max_takeoff / Units.lbs
     WSC             = 1.1 * VMAX ** 0.52 * SFLAP ** 0.6 * DG ** 0.32  # surface controls weight
+
+    ac_type = vehicle.systems.accessories
+    if ac_type == "business" or ac_type == "commuter":
+        SW = vehicle.wings['main_wing'].areas.reference
+        ULF = vehicle.envelope.ultimate_load
+        atmosphere = SUAVE.Analyses.Atmospheric.US_Standard_1976()
+        atmo_data = atmosphere.compute_values(vehicle.design_cruise_alt, 0)
+        atmo_data_floor = atmosphere.compute_values(0, 0)
+        DELTA = atmo_data.pressure / atmo_data_floor.pressure
+        QDIVE = 1481.35 * DELTA * vehicle.design_mach_number ** 2
+        DG = vehicle.mass_properties.max_takeoff / Units.lbs  # Design gross weight in lb
+        WSC = 0.404 * SW ** 0.317 * (DG/1000) ** 0.602 * ULF ** 0.525 * QDIVE ** 0.345
 
     XL          = vehicle.fuselages['fuselage'].lengths.total / Units.ft
     WF          = vehicle.fuselages['fuselage'].width / Units.ft

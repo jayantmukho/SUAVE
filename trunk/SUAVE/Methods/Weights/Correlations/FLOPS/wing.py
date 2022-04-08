@@ -442,8 +442,7 @@ def wing_weight_constants_FLOPS(ac_type):
         Outputs: list of coefficients used in weight estimations
 
     """
-    if ac_type == "short_range" or ac_type == "business" or \
-            ac_type == "commuter":
+    if ac_type == "business" or ac_type == "commuter":
         A = [30.0, 0., 0.25, 0.5, 0.5, 0.16, 1.2]
     else:
         A = [8.8, 6.25, 0.68, 0.34, 0.6, 0.035, 1.5]
